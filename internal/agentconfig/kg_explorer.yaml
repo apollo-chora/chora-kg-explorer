@@ -1,0 +1,20 @@
+# kg_explorer: per-agent model + prompt config (ADR-254 D2 / R23; ADR-227 reveal
+# model call, ex chora-fog-orchestrator concept_suggestion).
+#
+# AGENT-DRIVEN tiering: this YAML is the single source of truth for the
+# explorer's model. The agent sends primary_model as the gateway's
+# logical_model_id and fallback_models as the agent-declared fallback chain
+# (InvokeRequest.fallback_logical_model_ids); the gateway HONOURS it.
+#
+# The explorer proposes up to six concepts and six typed edges from a supplied,
+# entitled atom catalogue: a structured, short, catalogue-bound completion where
+# the fast tier is the right one (the fog orchestrator ran the same call on
+# gemini-2.5-flash). prompt_version labels the embedded default template
+# (internal/agent/prompt.go, ADR-197 embedded-default register).
+agent: kg_explorer
+sub_agents:
+  explorer:
+    tier: standard
+    primary_model: gemini-2.5-flash
+    fallback_models: [gemini-2.5-flash-lite]
+    prompt_version: v2
