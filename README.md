@@ -62,7 +62,7 @@ Configuration:
 | --- | --- | --- |
 | `CHORA_PROJECT_ID` | Project identity used at boot | Required |
 | `CHORA_AGENT_APP_NAME` | ADK session application name | Unset |
-| `KG_EXPLORER_MODEL` | Overrides the configured primary model | `gemini-2.5-flash` |
+| `KG_EXPLORER_MODEL` | Overrides the configured primary model | `longcat-2.5-preview` |
 | `CHORA_GATEWAY_ENDPOINT` | Model gateway address | `gateway.chora.site:443` |
 | `CHORA_GATEWAY_TENANT_ID` | Gateway tenant scope | Required |
 | `CHORA_GATEWAY_GCID` | Gateway GCID scope | Required |
@@ -76,7 +76,7 @@ Configuration:
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP/gRPC trace endpoint | Stdout when unset |
 | `CHORA_SERVICE_VERSION` | OTLP `service.version` value | `dev` |
 
-The embedded agent configuration in `internal/agentconfig/kg_explorer.yaml` selects `gemini-2.5-flash` with `gemini-2.5-flash-lite` as the fallback and prompt version `v2`. Setting `KG_EXPLORER_MODEL` changes only the primary model; the fallback list and prompt version remain configuration-defined.
+The embedded agent configuration in `internal/agentconfig/kg_explorer.yaml` selects `longcat-2.5-preview` as both the primary model and the fallback, with prompt version `v2`. Setting `KG_EXPLORER_MODEL` changes only the primary model; the fallback list and prompt version remain configuration-defined.
 
 For deployment, `Dockerfile` builds the service from the repository root and produces an image containing the `/usr/local/bin/kg_explorer` binary.
 

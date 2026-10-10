@@ -7,14 +7,15 @@
 # (InvokeRequest.fallback_logical_model_ids); the gateway HONOURS it.
 #
 # The explorer proposes up to six concepts and six typed edges from a supplied,
-# entitled atom catalogue: a structured, short, catalogue-bound completion where
-# the fast tier is the right one (the fog orchestrator ran the same call on
-# gemini-2.5-flash). prompt_version labels the embedded default template
+# entitled atom catalogue: a structured, short, catalogue-bound completion. All
+# text generation runs on the single longcat-2.5-preview route (the fog
+# orchestrator ran the same call on longcat-2.5-preview; the old HIGH/CHEAP
+# tiering has collapsed). prompt_version labels the embedded default template
 # (internal/agent/prompt.go, ADR-197 embedded-default register).
 agent: kg_explorer
 sub_agents:
   explorer:
     tier: standard
-    primary_model: gemini-2.5-flash
-    fallback_models: [gemini-2.5-flash-lite]
+    primary_model: longcat-2.5-preview
+    fallback_models: [longcat-2.5-preview]
     prompt_version: v2

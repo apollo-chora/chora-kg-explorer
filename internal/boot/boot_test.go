@@ -44,12 +44,12 @@ func TestLoadConfig_guardsAndDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Model != "gemini-2.5-flash" || cfg.PromptVersion != "v2" || len(cfg.FallbackModels) != 1 || cfg.GatewayEndpoint != "gateway.chora.site:443" || cfg.Env != "dev" {
+	if cfg.Model != "longcat-2.5-preview" || cfg.PromptVersion != "v2" || len(cfg.FallbackModels) != 1 || cfg.GatewayEndpoint != "gateway.chora.site:443" || cfg.Env != "dev" {
 		t.Fatalf("config = %+v", cfg)
 	}
-	t.Setenv("KG_EXPLORER_MODEL", "gemini-2.5-pro")
+	t.Setenv("KG_EXPLORER_MODEL", "ops-override-model")
 	cfg, _ = LoadConfig()
-	if cfg.Model != "gemini-2.5-pro" || cfg.FallbackModels[0] != "gemini-2.5-flash-lite" {
+	if cfg.Model != "ops-override-model" || cfg.FallbackModels[0] != "longcat-2.5-preview" {
 		t.Fatalf("override must replace the primary only: %+v", cfg)
 	}
 	attrs := cfg.LogAttrs()
@@ -151,7 +151,7 @@ func systemInstruction(req *adkmodel.LLMRequest) string {
 }
 
 func testConfig() Config {
-	return Config{Model: "gemini-2.5-flash", FallbackModels: []string{"gemini-2.5-flash-lite"}, PromptVersion: "v2"}
+	return Config{Model: "longcat-2.5-preview", FallbackModels: []string{"longcat-2.5-preview"}, PromptVersion: "v2"}
 }
 
 // runRoot runs the root agent through the real runner, optionally under the
@@ -228,7 +228,7 @@ func TestNewAgent_happyPathRendersTheFailClosedEnvelope(t *testing.T) {
 	if len(env.Edges) != 1 || env.Edges[0].Target != "c-2" || env.Edges[0].Class != "lateral" {
 		t.Fatalf("edges not fail-closed: %s", out)
 	}
-	if env.ModelID != "gemini-2.5-flash" || env.PromptVersion != "v2" || env.PromptSource != "embedded_fallback" {
+	if env.ModelID != "longcat-2.5-preview" || env.PromptVersion != "v2" || env.PromptSource != "embedded_fallback" {
 		t.Fatalf("attribution: %s", out)
 	}
 	if len(llm.calls) != 1 {
