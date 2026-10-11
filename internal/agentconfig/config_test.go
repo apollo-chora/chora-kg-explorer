@@ -18,10 +18,10 @@ func TestKgExplorerStandardTier(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if sub.Tier != "standard" || sub.PrimaryModel != "gemini-2.5-flash" || sub.PromptVersion != "v2" {
+	if sub.Tier != "standard" || sub.PrimaryModel != "longcat-2.5-preview" || sub.PromptVersion != "v2" {
 		t.Fatalf("explorer config = %+v", sub)
 	}
-	if len(sub.FallbackModels) != 1 || sub.FallbackModels[0] != "gemini-2.5-flash-lite" {
+	if len(sub.FallbackModels) != 1 || sub.FallbackModels[0] != "longcat-2.5-preview" {
 		t.Fatalf("fallback chain = %v", sub.FallbackModels)
 	}
 }

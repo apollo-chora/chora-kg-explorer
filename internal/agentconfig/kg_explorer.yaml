@@ -11,10 +11,13 @@
 # the fast tier is the right one (the fog orchestrator ran the same call on
 # gemini-2.5-flash). prompt_version labels the embedded default template
 # (internal/agent/prompt.go, ADR-197 embedded-default register).
+#
+# The deployment serves one text model, so the declared fallback chain resolves
+# to the same logical model as the primary.
 agent: kg_explorer
 sub_agents:
   explorer:
     tier: standard
-    primary_model: gemini-2.5-flash
-    fallback_models: [gemini-2.5-flash-lite]
+    primary_model: longcat-2.5-preview
+    fallback_models: [longcat-2.5-preview]
     prompt_version: v2

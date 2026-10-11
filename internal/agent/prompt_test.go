@@ -225,7 +225,7 @@ func TestParseOutputCapsAndGarbage(t *testing.T) {
 }
 
 func TestOutputRenderAndIDSets(t *testing.T) {
-	out := Output{ModelID: "gemini-2.5-flash", PromptVersion: PromptVersion, PromptSource: "embedded_default"}
+	out := Output{ModelID: "longcat-2.5-preview", PromptVersion: PromptVersion, PromptSource: "embedded_default"}
 	var back map[string]any
 	if err := json.Unmarshal([]byte(out.Render()), &back); err != nil {
 		t.Fatal(err)
