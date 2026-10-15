@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/apollo-chora/chora-kg-explorer/internal/agentconfig"
 )
@@ -27,9 +28,15 @@ const (
 	CrewSurface = "kg_exploration"
 )
 
-// envModel lets ops override the primary model for a quick experiment; tier,
-// fallback chain and prompt version stay YAML-declared.
-const envModel = "KG_EXPLORER_MODEL"
+// Model env names (names only; values come from the container env per
+// feedback_no_inline_config). KG_EXPLORER_MODEL is REQUIRED — boot fails loud
+// when it is unset rather than falling back to a literal model name.
+// KG_EXPLORER_FALLBACK_MODELS is an optional comma-separated chain: unset (the
+// default) declares no fallback.
+const (
+	envModel    = "KG_EXPLORER_MODEL"
+	envFallback = "KG_EXPLORER_FALLBACK_MODELS"
+)
 
 // Config is the binary's fully resolved boot configuration.
 type Config struct {
@@ -46,7 +53,13 @@ type Config struct {
 	GatewayTenantID string
 	GatewayGCID     string
 
-	Model          string
+	// Model is the gateway logical_model_id, read from the REQUIRED
+	// KG_EXPLORER_MODEL env var. An unset var is a boot error: there is no
+	// literal model name to fall back to.
+	Model string
+	// FallbackModels is the agent-declared fallback chain, read from the
+	// optional KG_EXPLORER_FALLBACK_MODELS env var as a comma-separated list.
+	// Empty (the default) declares no chain.
 	FallbackModels []string
 	PromptVersion  string
 
@@ -59,6 +72,34 @@ func EnvOr(name, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// requiredModel returns the env-provided gateway logical_model_id, failing
+// loud when the var is unset. Model ids are env-only: there is no literal
+// default to fall back to (feedback_no_inline_config).
+func requiredModel(name string) (string, error) {
+	v := strings.TrimSpace(os.Getenv(name))
+	if v == "" {
+		return "", fmt.Errorf("%s: %s required (the gateway logical_model_id; env-only, no default)", CrewKind, name)
+	}
+	return v, nil
+}
+
+// fallbackModels parses a comma-separated env list into the declared fallback
+// chain. Unset / blank (the default) declares no chain, so the gateway is
+// asked for the primary target only.
+func fallbackModels(name string) []string {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return nil
+	}
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // LoadConfig resolves the kg_explorer boot config.
@@ -81,6 +122,10 @@ func LoadConfig() (Config, error) {
 		return Config{}, fmt.Errorf("%s: CHORA_GATEWAY_TENANT_ID + CHORA_GATEWAY_GCID required "+
 			"(ADR-163; no in-memory fallback per feedback_no_stubs_real_wiring)", CrewKind)
 	}
+	model, err := requiredModel(envModel)
+	if err != nil {
+		return Config{}, err
+	}
 	return Config{
 		ProjectID:       projectID,
 		AgentAppName:    os.Getenv("CHORA_AGENT_APP_NAME"),
@@ -88,8 +133,8 @@ func LoadConfig() (Config, error) {
 		GatewayAudience: EnvOr("CHORA_GATEWAY_AUDIENCE", "https://gateway.chora.site"),
 		GatewayTenantID: gatewayTenantID,
 		GatewayGCID:     gatewayGCID,
-		Model:           EnvOr(envModel, sub.PrimaryModel),
-		FallbackModels:  sub.FallbackModels,
+		Model:           model,
+		FallbackModels:  fallbackModels(envFallback),
 		PromptVersion:   sub.PromptVersion,
 		Env:             EnvOr("CHORA_ENV", "dev"),
 	}, nil

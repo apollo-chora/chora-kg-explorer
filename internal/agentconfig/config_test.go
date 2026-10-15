@@ -18,11 +18,10 @@ func TestKgExplorerStandardTier(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if sub.Tier != "standard" || sub.PrimaryModel != "gemini-2.5-flash" || sub.PromptVersion != "v2" {
+	// The model id is env-only (KG_EXPLORER_MODEL); the YAML declares only the
+	// tier and the prompt version.
+	if sub.Tier != "standard" || sub.PromptVersion != "v2" {
 		t.Fatalf("explorer config = %+v", sub)
-	}
-	if len(sub.FallbackModels) != 1 || sub.FallbackModels[0] != "gemini-2.5-flash-lite" {
-		t.Fatalf("fallback chain = %v", sub.FallbackModels)
 	}
 }
 
