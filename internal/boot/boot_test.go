@@ -24,7 +24,8 @@ func setGatewayEnv(t *testing.T) {
 	t.Setenv("CHORA_PROJECT_ID", "p1")
 	t.Setenv("CHORA_GATEWAY_TENANT_ID", "t1")
 	t.Setenv("CHORA_GATEWAY_GCID", "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b")
-	t.Setenv("KG_EXPLORER_MODEL", "")
+	t.Setenv(envModel, "env-kg-model")
+	t.Setenv(envFallback, "")
 	t.Setenv("CHORA_AGENT_APP_NAME", "")
 }
 
@@ -32,6 +33,7 @@ func TestLoadConfig_guardsAndDefaults(t *testing.T) {
 	t.Setenv("CHORA_PROJECT_ID", "")
 	t.Setenv("CHORA_GATEWAY_TENANT_ID", "")
 	t.Setenv("CHORA_GATEWAY_GCID", "")
+	t.Setenv(envModel, "")
 	if _, err := LoadConfig(); err == nil || !strings.Contains(err.Error(), "CHORA_PROJECT_ID") {
 		t.Fatalf("project guard: %v", err)
 	}
@@ -44,18 +46,30 @@ func TestLoadConfig_guardsAndDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Model != "gemini-2.5-flash" || cfg.PromptVersion != "v2" || len(cfg.FallbackModels) != 1 || cfg.GatewayEndpoint != "gateway.chora.site:443" || cfg.Env != "dev" {
+	if cfg.Model != "env-kg-model" || cfg.PromptVersion != "v2" || len(cfg.FallbackModels) != 0 || cfg.GatewayEndpoint != "gateway.chora.site:443" || cfg.Env != "dev" {
 		t.Fatalf("config = %+v", cfg)
 	}
-	t.Setenv("KG_EXPLORER_MODEL", "gemini-2.5-pro")
+	// The model id is env-only — nothing in the YAML or the code names one — and
+	// the declared chain comes from its own comma list.
+	t.Setenv(envModel, "env-override-model")
+	t.Setenv(envFallback, "env-fb-a, env-fb-b")
 	cfg, _ = LoadConfig()
-	if cfg.Model != "gemini-2.5-pro" || cfg.FallbackModels[0] != "gemini-2.5-flash-lite" {
-		t.Fatalf("override must replace the primary only: %+v", cfg)
+	if cfg.Model != "env-override-model" || len(cfg.FallbackModels) != 2 || cfg.FallbackModels[0] != "env-fb-a" || cfg.FallbackModels[1] != "env-fb-b" {
+		t.Fatalf("env model + chain must flow through: %+v", cfg)
 	}
 	attrs := cfg.LogAttrs()
 	joined := strings.Join(strings.Fields(strings.TrimSpace(strings.ReplaceAll(strings.Trim(strings.Join(toStrings(attrs), " "), "[]"), "\n", " "))), " ")
 	if !strings.Contains(joined, "surface kg_exploration") || strings.Contains(joined, "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b") {
 		t.Fatalf("log attrs must name the surface and truncate the gcid: %s", joined)
+	}
+}
+
+func TestLoadConfig_missingModelFailsLoud(t *testing.T) {
+	setGatewayEnv(t)
+	t.Setenv(envModel, "")
+	_, err := LoadConfig()
+	if err == nil || !strings.Contains(err.Error(), envModel) {
+		t.Fatalf("an unset model var must fail loud and name the var: %v", err)
 	}
 }
 
@@ -151,7 +165,7 @@ func systemInstruction(req *adkmodel.LLMRequest) string {
 }
 
 func testConfig() Config {
-	return Config{Model: "gemini-2.5-flash", FallbackModels: []string{"gemini-2.5-flash-lite"}, PromptVersion: "v2"}
+	return Config{Model: "env-kg-model", FallbackModels: []string{"env-kg-fb"}, PromptVersion: "v2"}
 }
 
 // runRoot runs the root agent through the real runner, optionally under the
@@ -228,7 +242,7 @@ func TestNewAgent_happyPathRendersTheFailClosedEnvelope(t *testing.T) {
 	if len(env.Edges) != 1 || env.Edges[0].Target != "c-2" || env.Edges[0].Class != "lateral" {
 		t.Fatalf("edges not fail-closed: %s", out)
 	}
-	if env.ModelID != "gemini-2.5-flash" || env.PromptVersion != "v2" || env.PromptSource != "embedded_fallback" {
+	if env.ModelID != "env-kg-model" || env.PromptVersion != "v2" || env.PromptSource != "embedded_fallback" {
 		t.Fatalf("attribution: %s", out)
 	}
 	if len(llm.calls) != 1 {
