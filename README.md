@@ -49,7 +49,7 @@ The embedded agent config (`internal/agentconfig/kg_explorer.yaml`) declares the
 `explorer` sub-agent's tier (`standard`) and prompt version (`v2`). No model name is
 compiled in; boot fails when `KG_EXPLORER_MODEL` is unset.
 
-### The health endpoint does not bind — this is the agent framework, not this service
+### The health endpoint does not bind — a stale framework pin, not this service
 
 The binary documents `AGENT_HEALTH_PORT` (default `8080`), and `chora-adk-common` logs a
 `health_addr` at boot:
@@ -61,11 +61,21 @@ The binary documents `AGENT_HEALTH_PORT` (default `8080`), and `chora-adk-common
 
 **Nothing answers on that port.** Verified in the running stack from a sibling container
 and from inside this container's own network namespace, over both `127.0.0.1:8080` and
-`[::1]:8080` — all refused. The same is true of `chora-companion-diagnosis`, which is
-built the same way, so treat it as a `chora-adk-common` behaviour rather than a fault in
-either repository.
+`[::1]:8080` — all refused.
 
-Do not gate readiness on `curl http://…:8080/healthz` for these agents.
+The cause is the framework version pinned in `go.mod`:
+
+```text
+chora-adk-common v0.0.0-20261005110720-56af53fbecf8   ← this repo, no listener
+chora-adk-common v0.0.0-20261018001513-336709b355a0   ← chora-qgen, binds correctly
+```
+
+The October 18 pseudo-version fixed the bind. `chora-companion-diagnosis` and
+`chora-oe-grading` carry the same stale pin and fail the same way; `chora-qgen`'s health
+port answers normally. Bumping the pin past October 18 is the fix — the service code
+needs no change.
+
+Do not gate readiness on `curl http://…:8080/healthz` for these agents until then.
 
 ## Prerequisites
 
